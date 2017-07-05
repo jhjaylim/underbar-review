@@ -7,7 +7,7 @@
   // seem very useful, but remember it--if a function needs to provide an
   // iterator when the user does not pass one in, this will be handy.
   _.identity = function(val) {
-    return val;w
+    return val;
   };
 
   /**
@@ -231,16 +231,36 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
 
-    // TIP: Try re-using reduce() here.
-    _.reduce(collection, function(col){
-      return iterator(col);
+    return _.reduce(collection, function(checker,item){
+      if (iterator===undefined) {
+        if (item&&checker) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
 
+        if (iterator(item)&&checker) {
+          return true;
+        } else {
+          return false;
+        }
+      } 
+      
     }, true);
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
+    return !_.every(collection, function(col){
+      if (iterator===undefined) {
+        return !col;
+      } else {
+        return !iterator(col);
+      }
+
+    });
     // TIP: There's a very clever way to re-use every() here.
   };
 
@@ -264,11 +284,28 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    _.each(arguments, function(ob){
+      _.each(ob, function(item, key) {
+        obj[key] = item;
+      });
+    });
+    return obj;
+
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+
+
+    _.each(arguments, function(ob){
+      _.each(ob, function(item, key) {
+        if (obj[key]===undefined) {
+          obj[key] = item; 
+        }
+      });
+    });
+    return obj;
   };
 
 
@@ -312,6 +349,23 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+
+    var alreadyCalled = {};
+    
+    
+    return function(arg){
+      var argumentsString = JSON.stringify(arguments);
+      if (alreadyCalled[argumentsString]===undefined) {
+        alreadyCalled[argumentsString] = func.apply(this, arguments);
+        
+      } 
+      return alreadyCalled[argumentsString];
+      
+    }
+
+
+
+
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -321,6 +375,23 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    
+    if (arguments.length>2) {
+      var inputs = [];
+      for (var i = 2; i<arguments.length; i++) {
+        inputs.push(arguments[i]);
+      }
+      setTimeout(function(){
+        func.apply(this, inputs);
+      }, wait); 
+    
+    } else {
+      setTimeout(function(){
+        func.apply(this);
+      }, wait);
+    }  
+
+
   };
 
 
@@ -335,6 +406,19 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
+    var myArray = [];
+    var result = [];
+    _.each(array,function(arr){
+      myArray.push(arr);
+    });
+
+    while(myArray.length>0) {
+      var randomIndex = Math.floor(Math.random()*myArray.length);
+      result.push(myArray[randomIndex]);
+      myArray = myArray.slice(0, randomIndex).concat(myArray.slice(randomIndex+1));
+    }
+    return result;
+
   };
 
 
@@ -349,6 +433,15 @@
   // Calls the method named by functionOrKey on each value in the list.
   // Note: You will need to learn a bit about .apply to complete this.
   _.invoke = function(collection, functionOrKey, args) {
+
+    return _.map(collection, function(col){
+      if (typeof functionOrKey === 'string') {
+        return col[functionOrKey].apply(col, args);
+      } else {
+        return functionOrKey.apply(col, args);
+      }
+    });
+  
   };
 
   // Sort the object's values by a criterion produced by an iterator.
@@ -356,6 +449,65 @@
   // of that string. For example, _.sortBy(people, 'name') should sort
   // an array of people by their name.
   _.sortBy = function(collection, iterator) {
+
+    for (var i = 0; i<collection.length;i++) {
+
+      for (var j = i+1; j<collection.length; j++) {
+        if (iterator === undefined) {// numeric case
+          if (collection[i]=== undefined) {
+            var temp = collection[j];
+            collection[j] = collection[i];
+            collection[i] = temp;
+          } else {
+            if (collection[j]>collection[i]) {
+              var temp = collection[j];
+              collection[j] = collection[i];
+              collection[i] = temp;
+            }
+          } 
+
+        } else {
+          if (typeof iterator === 'string') {
+            if (collection[i][iterator]> collection[j][iterator]) {
+              var temp = collection[j];
+              collection[j] = collection[i];
+              collection[i] = temp;
+            }           
+          } else {
+
+            if (iterator(collection[i])===undefined) {
+              var temp = collection[j];
+              collection[j] = collection[i];
+              collection[i] = temp;
+            } else if (iterator(collection[i])> iterator(collection[j])) {
+              var temp = collection[j];
+              collection[j] = collection[i];
+              collection[i] = temp;
+            }     
+          }
+
+
+        }
+      } 
+
+      
+    }
+    return collection;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   };
 
   // Zip together two or more arrays with elements of the same index
